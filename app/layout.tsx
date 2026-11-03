@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Source_Sans_3 } from "next/font/google";
+import { Source_Sans_3 } from "next/font/google";
+import localFont from "next/font/local";
 import "katex/dist/katex.min.css";
 import "./globals.css";
 import { AppShell, SidebarProvider } from "@/components/sidebar";
@@ -10,7 +11,17 @@ import UpdateBanner from "@/components/update-banner";
 
 // Chrome = JetBrains Mono, teaching prose = Source Sans 3, titles = CMU
 // Serif (the bundled lh-cmu @font-face in globals.css — no CDN).
-const ui = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains" });
+// JetBrains Mono is bundled whole (official v2.304 variable font, OFL)
+// because Google's "latin" subset drops the box-drawing block (U+2500..):
+// teacher diagrams like ┌─┐│▲ then fell back to a font of another width
+// and rendered misaligned.
+const ui = localFont({
+	src: "./fonts/JetBrainsMono-wght.woff2",
+	weight: "100 800",
+	style: "normal",
+	variable: "--font-jetbrains",
+	fallback: ["ui-monospace", "SFMono-Regular", "monospace"],
+});
 const prose = Source_Sans_3({ subsets: ["latin"], variable: "--font-sans3" });
 
 export const metadata: Metadata = {
