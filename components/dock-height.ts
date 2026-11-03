@@ -59,7 +59,11 @@ export function syncDockHeight(elements: DockHeightElements, expanded: boolean) 
 	const shellStyle = getComputedStyle(shell);
 	const questionStyle = question ? getComputedStyle(question) : null;
 	const budget = dockHeightBudget({
-		columnHeight: column.clientHeight,
+		// Phone: the dock may take at most ~2/3 of the column, so the lesson
+		// it asks about stays in view above it (the question scrolls inside).
+		columnHeight: window.matchMedia?.("(max-width: 767px)").matches
+			? Math.round(column.clientHeight * 0.65)
+			: column.clientHeight,
 		outsideHeight: Math.max(height(block) - height(viewport), 0),
 		beforeShellHeight: Math.max(height(body) - height(shell), 0),
 		shellBorderHeight: pixels(shellStyle.borderTopWidth) + pixels(shellStyle.borderBottomWidth),
