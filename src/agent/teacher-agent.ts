@@ -19,7 +19,7 @@ import { healToolRecord, withArgumentHeal } from "./tools/heal.ts";
 import { sendToUserTool } from "./tools/send-to-user.ts";
 import { createReadTool, readTool } from "./tools/read.ts";
 import { CLAUDE_CODE_PROVIDER } from "./claude-code/constants.ts";
-import { quizInputObject, quizInputProblems } from "../core/question-core.ts";
+import { quizInputObject, quizAuthoringProblems } from "../core/question-core.ts";
 import { QUESTION_TOOLS, type EnabledTools } from "../core/pending.ts";
 import { toLlmMessages, nativeInputCause, PRACTICE_PROBLEM_TOOL } from "../core/native-messages.ts";
 import type { ChatGPTRequestCycle } from "./chatgpt-request-cycle.ts";
@@ -297,7 +297,7 @@ export function createTeacherAgent(
 }
 
 /** The bare teach question set (tests, bare agents): quiz with the shared
- *  authoring refinement (quizInputProblems, run in execute — returns an
+ *  authoring refinement (quizAuthoringProblems, run in execute — returns an
  *  invalidInputResult isError result the model retries on, pi 1.0
  *  convention) but NO per-session nodeId check (no record to read),
  *  plus ask. */
@@ -312,7 +312,7 @@ export function bareQuestionTools(): Record<string, AgentTool<any>> {
 		parameters: quizInputObject,
 		executionMode: "sequential",
 		execute: async (_toolCallId, input) => {
-			const problems = quizInputProblems(input);
+			const problems = quizAuthoringProblems(input);
 			if (problems.length > 0) return invalidInputResult("quiz", problems);
 			return questionResult();
 		},

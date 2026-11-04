@@ -158,7 +158,7 @@ describe("the calculus retry loop — an exact answer was incorrectly stripped",
 	it("the real probe tool accepts a label with its sentence-final period", async () => {
 		const input = {
 			question: "Which claim?",
-			options: [{ label: "The claim holds." }, { label: "The claim need not hold." }],
+			options: [{ label: "The claim always holds." }, { label: "The claim need not hold." }],
 			explanation: "The premise does not imply the claim.",
 			correctAnswer: "The claim need not hold.",
 		};
