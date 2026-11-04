@@ -141,6 +141,56 @@ export function quizInputProblems(input: {
 	return problems;
 }
 
+/** Below this length options are short tokens ("O(n)", "3") where length
+ *  carries no signal, so the check stays out of the way. */
+const LENGTH_TELL_MIN_CHARS = 20;
+/** The correct option may run this much longer than the longest distractor. */
+const LENGTH_TELL_RATIO = 1.2;
+const LENGTH_TELL_MIN_GAP = 8;
+
+/** The length tell: the shuffle hides position, so the remaining giveaway is
+ *  the correct option being visibly the longest (models pad the right answer
+ *  with precision and leave distractors terse). Single-select only, and only
+ *  when the correct option clearly outruns every distractor.
+ *
+ *  AUTHORING-ONLY: run at the tool-call boundary, never at the display parse
+ *  seam (tool-parts.ts), or quizzes already in old transcripts stop rendering. */
+export function quizLengthTellProblems(input: {
+	options: Array<{ label: string; value?: string }>;
+	correctAnswer: string | string[];
+	multiSelect?: boolean;
+}): string[] {
+	if (input.multiSelect === true || input.options.length < 2) return [];
+	const keyed = input.options.map((o) => ({ key: o.value?.trim() || o.label.trim(), len: o.label.trim().length }));
+	const correct = [...new Set(coerceCorrectAnswer(input.correctAnswer, keyed.map((o) => o.key)))];
+	if (correct.length !== 1) return [];
+	const right = keyed.find((o) => o.key === correct[0]);
+	if (!right) return [];
+	const longestWrong = Math.max(...keyed.filter((o) => o !== right).map((o) => o.len));
+	if (
+		right.len >= LENGTH_TELL_MIN_CHARS &&
+		right.len > longestWrong * LENGTH_TELL_RATIO &&
+		right.len - longestWrong >= LENGTH_TELL_MIN_GAP
+	) {
+		return [
+			`The correct option is ${right.len} characters and the longest distractor is ${longestWrong}: the learner can ` +
+				"pick it by length alone. Rewrite so the options match in length and detail: trim the correct claim, or give " +
+				"the distractors the same specificity. Vary which option is longest across questions.",
+		];
+	}
+	return [];
+}
+
+/** What every quiz tool checks before posing: gradeable + no length tell. */
+export function quizAuthoringProblems(input: {
+	options: Array<{ label: string; value?: string }>;
+	correctAnswer: string | string[];
+	multiSelect?: boolean;
+}): string[] {
+	const problems = quizInputProblems(input);
+	return problems.length > 0 ? problems : quizLengthTellProblems(input);
+}
+
 // The SHARED quiz authoring fields — everything except `nodeId`. The probe
 // and teach agents use DIFFERENT tools under the same name (docs/probe-teach-
 // split.md §1): the prober's quiz has NO nodeId field at all (there is no

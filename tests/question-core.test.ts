@@ -19,6 +19,8 @@ import {
 	isCorrect,
 	normalizeOptions,
 	quizInputProblems,
+	quizLengthTellProblems,
+	quizAuthoringProblems,
 	explainInputBase,
 	explainInputObject,
 	explainInputProblems,
@@ -817,5 +819,69 @@ describe("the quiz role field (predict | check)", () => {
 	it("the display parse KEEPS the role: quizDisplayInputSchema retains type where the base strips it", () => {
 		const cleaned = Value.Clean(quizDisplayInputSchema, { ...valid }) as Record<string, unknown>;
 		assert.equal(cleaned.type, "check", "role survives the display parse (the dock gates collapse + labels on it)");
+	});
+});
+
+describe("quizLengthTellProblems (the correct option must not win on length)", () => {
+	const opts = (correct: string, ...wrong: string[]) => [
+		{ label: correct, value: "right" },
+		...wrong.map((label, i) => ({ label, value: `wrong${i}` })),
+	];
+
+	it("refuses a correct option that clearly outruns every distractor", () => {
+		const input = {
+			options: opts(
+				"It rescales each gradient by a running average of its squared magnitude",
+				"It uses a fixed learning rate",
+				"It ignores past gradients",
+			),
+			correctAnswer: "right",
+		};
+		assert.equal(quizLengthTellProblems(input).length, 1);
+		assert.equal(quizAuthoringProblems(input).length, 1, "the boundary check includes it");
+		assert.deepEqual(quizInputProblems(input), [], "the display seam stays lenient (old transcripts still render)");
+	});
+
+	it("passes options of even length, and a longest DISTRACTOR", () => {
+		assert.deepEqual(
+			quizLengthTellProblems({
+				options: opts("Rescales steps by recent squared gradients", "Rescales steps by the total gradient count"),
+				correctAnswer: "right",
+			}),
+			[],
+		);
+		assert.deepEqual(
+			quizLengthTellProblems({
+				options: opts("Uses a fixed step", "Rescales each step by a running average of squared gradients"),
+				correctAnswer: "right",
+			}),
+			[],
+		);
+	});
+
+	it("leaves short tokens, small gaps, and multi-select alone", () => {
+		assert.deepEqual(quizLengthTellProblems({ options: opts("O(n log n)", "O(n)"), correctAnswer: "right" }), []);
+		assert.deepEqual(
+			quizLengthTellProblems({
+				options: opts("The slope of the tangent line", "The value of the curve at x"),
+				correctAnswer: "right",
+			}),
+			[],
+			"a 2-char gap is noise",
+		);
+		assert.deepEqual(
+			quizLengthTellProblems({
+				options: opts("A very much longer correct option text here", "Short one", "Also right"),
+				correctAnswer: ["right", "wrong1"],
+				multiSelect: true,
+			}),
+			[],
+		);
+	});
+
+	it("keys options by label when they carry no value", () => {
+		const right = "It rescales each gradient by a running average of its squared magnitude";
+		const input = { options: [{ label: right }, { label: "It uses a fixed rate" }], correctAnswer: right };
+		assert.equal(quizLengthTellProblems(input).length, 1);
 	});
 });
