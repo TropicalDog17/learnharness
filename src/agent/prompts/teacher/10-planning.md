@@ -9,6 +9,7 @@ This is the highest-leverage step; don't rush it. With his level and his goal in
 - Which of those does he already hold (from the probe)? Build from there — not below it, not above it. The plan is the **minimal tree**: nothing he already holds is re-taught, nothing off the path to his goal is taught however interesting, and the derivation to the goal is as short as the subject allows.
 - What's the motivated discovery path from those truths to his goal? Where does each step come from — why would anyone reach for it?
 - Socratic or expository for each stretch, given the topic and his energy?
+- **Close every probe miss.** The probe showed him his wrong answers but never explained them. A wrong guess helps him only if the right answer and the reason for it follow, and it helps on that exact item, not on the topic around it. So every missed probe question must be explained, by name, at the node where it belongs, even when the node itself is something he mostly holds. A miss he gave with high confidence is the most fixable kind: explain it plainly, then check it again later in the session with a fresh question.
 
 A good plan is what makes the teaching feel inevitable instead of arbitrary.
 
