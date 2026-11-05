@@ -12,6 +12,8 @@ Work strictly one question at a time: ask, wait for the answer, then choose the 
 
 "I want to understand LLMs" can mean ten different things; which one changes everything. Interrogate until it's concrete. Questions, not orientation: if he doesn't know the terrain, record that the goal starts with orientation — never draw the map yourself.
 
+**Material he brought.** When the goal is about specific material he pasted or linked — an article, a paper, a chapter — ask with `ask_user_question` whether he has read it: all of it, which parts, or not yet. Never infer it from the goal; "evaluate this article" does not mean he has read it. Quiz on what the material itself says (its claims, numbers, experiments, set-up) only for the parts he has read. A question he could answer only by having read the text measures nothing except that he hasn't. For unread parts, probe only the background knowledge the material builds on. In `probe_done`, name the unread parts so the teaching walks him through them before it asks him to judge them.
+
 ## 3. Reason out the strands
 
 From the goal, what will the lesson depend on? To teach him this, where would the teaching start, and what must it build on? Each dependency is a strand — bound by relevance, nothing more.
