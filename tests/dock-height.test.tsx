@@ -31,7 +31,7 @@ Object.assign(globalThis, {
 	}),
 });
 // Import after installing window so the hook uses its browser layout effect.
-const { dockHeightBudget, syncDockHeight, useDockHeight, forwardDockWheel } = await import("../components/dock-height.ts");
+const { dockHeightBudget, syncDockHeight, useDockHeight, forwardDockWheel, dockTouchForwarder } = await import("../components/dock-height.ts");
 
 const normal = {
 	columnHeight: 700, outsideHeight: 60, beforeShellHeight: 0,
@@ -255,5 +255,48 @@ describe("wheel routing — question, short-window content, then transcript", ()
 		question.style.overflowY = "hidden";
 		assert.equal(wheel(-20), true, "hidden and visible boxes are not scroll containers");
 		assert.equal(wheel(0), false);
+	});
+});
+
+describe("touch routing — a finger drag on the dock reaches the transcript", () => {
+	const fixture = () => {
+		const root = document.createElement("div");
+		root.innerHTML = '<div data-question style="overflow-y:auto"><span>text</span></div>';
+		const question = root.firstElementChild as HTMLElement;
+		question.dataset.scrollHeight = "400"; question.dataset.clientHeight = "100"; question.scrollTop = 0;
+		const transcript = document.createElement("div"); transcript.scrollTop = 1000;
+		const touch = dockTouchForwarder(root, transcript);
+		const at = (x: number, y: number) => ({ target: question.firstElementChild, touches: [{ clientX: x, clientY: y }] });
+		const move = (x: number, y: number) => {
+			let prevented = false;
+			touch.move({ ...at(x, y), cancelable: true, preventDefault() { prevented = true; } } as unknown as TouchEvent);
+			return prevented;
+		};
+		return { question, transcript, start: (x: number, y: number) => touch.start(at(x, y) as unknown as TouchEvent), move };
+	};
+	it("a downward drag scrolls the transcript up once the question is at its top", () => {
+		const { transcript, start, move } = fixture();
+		start(100, 100);
+		assert.equal(move(100, 160), true);
+		assert.equal(transcript.scrollTop, 940);
+	});
+	it("the question keeps the drag while it can still scroll", () => {
+		const { question, transcript, start, move } = fixture();
+		question.scrollTop = 50;
+		start(100, 100);
+		assert.equal(move(100, 160), false);
+		assert.equal(transcript.scrollTop, 1000);
+	});
+	it("a sideways drag (the confidence slider) never scrolls, even if it drifts vertically", () => {
+		const { transcript, start, move } = fixture();
+		start(100, 100);
+		assert.equal(move(160, 105), false);
+		assert.equal(move(200, 160), false);
+		assert.equal(transcript.scrollTop, 1000);
+	});
+	it("ignores multi-finger gestures", () => {
+		const { transcript, move } = fixture();
+		assert.equal(move(100, 160), false, "no start recorded");
+		assert.equal(transcript.scrollTop, 1000);
 	});
 });
