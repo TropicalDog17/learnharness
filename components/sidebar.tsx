@@ -53,6 +53,19 @@ import type { UpdateState } from "@/components/settings/update-settings.tsx";
 import { FilePathDropZone } from "@/components/file-path-drop-zone";
 const SIDEBAR_AUTOCLOSE = 928;
 
+/** Phone widths in the plain browser: the 288px sidebar would squeeze the
+ * chat to a sliver, so it acts as a drawer. It starts closed whatever the
+ * stored preference says, and closes itself after every navigation (picking
+ * a session). The preference stays untouched for wider screens. */
+const PHONE_QUERY = "(max-width: 767px)";
+const isPhone = () => typeof window.matchMedia === "function" && window.matchMedia(PHONE_QUERY).matches;
+
+export function sidebarOpenOnLoad(stored: string | null, phone: boolean): boolean {
+	if (phone) return false;
+	// Default: open (first run introduces the sidebar).
+	return stored === null ? true : stored === "1";
+}
+
 // Module scope, guarded for SSR (the server has no navigator).
 const IS_ELECTRON = typeof navigator !== "undefined" && navigator.userAgent.includes("Electron");
 
@@ -128,9 +141,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 		const off = window.lh?.onZoom?.(setZoomVar);
 		void window.lh?.getZoom?.().then(setZoomVar);
 
-		const stored = localStorage.getItem(STORAGE_KEY);
-		// Default: open (first run introduces the sidebar).
-		setOpen(stored === null ? true : stored === "1");
+		setOpen(sidebarOpenOnLoad(localStorage.getItem(STORAGE_KEY), isPhone()));
 		setMounted(true);
 		return () => off?.();
 	}, []);
@@ -146,6 +157,13 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 		window.addEventListener("resize", onResize);
 		return () => window.removeEventListener("resize", onResize);
 	}, []);
+
+	// Drawer close on phones: any navigation (a session, a new session,
+	// settings) folds the sidebar away so the page it opened is visible.
+	const pathname = usePathname();
+	useEffect(() => {
+		if (isPhone()) setOpen(false);
+	}, [pathname]);
 
 	const toggle = useCallback(() => {
 		// Opening while narrow (auto-closed, or the user's own closed-at-

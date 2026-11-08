@@ -14,7 +14,7 @@ import React from "react";
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { renderToStaticMarkup } from "react-dom/server";
-import { SessionRow, timeAgo } from "../components/sidebar.tsx";
+import { SessionRow, sidebarOpenOnLoad, timeAgo } from "../components/sidebar.tsx";
 import type { ChatListItem } from "../src/core/index.ts";
 
 function item(overrides: Partial<ChatListItem>): ChatListItem {
@@ -163,5 +163,17 @@ describe("SessionRow practice badge (practice sessions, 2026-10-04)", () => {
 	it("a practice row with a posed problem says the problem is waiting", () => {
 		const html = render(item({ kind: "practice", pendingProblem: true }));
 		assert.match(html, /Problem waiting ·/);
+	});
+});
+
+describe("sidebarOpenOnLoad — a drawer on phones, the stored choice elsewhere", () => {
+	it("starts closed on a phone, whatever was stored", () => {
+		assert.equal(sidebarOpenOnLoad(null, true), false);
+		assert.equal(sidebarOpenOnLoad("1", true), false);
+	});
+	it("wider screens keep the stored choice, open on first run", () => {
+		assert.equal(sidebarOpenOnLoad(null, false), true);
+		assert.equal(sidebarOpenOnLoad("1", false), true);
+		assert.equal(sidebarOpenOnLoad("0", false), false);
 	});
 });
