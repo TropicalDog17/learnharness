@@ -147,11 +147,46 @@ export function useDockHeight({
  * at its edge. overflow:hidden/visible boxes cannot consume the wheel. */
 export function forwardDockWheel(event: WheelEvent, root: HTMLElement, transcript: HTMLElement) {
 	if (event.deltaY === 0) return;
-	for (let n = event.target as HTMLElement | null; n && n !== root; n = n.parentElement) {
-		if (!(n instanceof HTMLElement) || !/^(auto|scroll)$/.test(getComputedStyle(n).overflowY)) continue;
-		if (n.scrollHeight - n.clientHeight < 2) continue;
-		if (event.deltaY < 0 ? n.scrollTop > 0 : n.scrollTop < n.scrollHeight - n.clientHeight - 0.5) return;
-	}
+	if (innerScrollerTakes(event.target, root, event.deltaY)) return;
 	event.preventDefault();
 	transcript.scrollTop += event.deltaY * (event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? transcript.clientHeight : 1);
+}
+
+/** Can a scroll container between the target and the dock root still move by deltaY? */
+function innerScrollerTakes(target: EventTarget | null, root: HTMLElement, deltaY: number): boolean {
+	for (let n = target as HTMLElement | null; n && n !== root; n = n.parentElement) {
+		if (!(n instanceof HTMLElement) || !/^(auto|scroll)$/.test(getComputedStyle(n).overflowY)) continue;
+		if (n.scrollHeight - n.clientHeight < 2) continue;
+		if (deltaY < 0 ? n.scrollTop > 0 : n.scrollTop < n.scrollHeight - n.clientHeight - 0.5) return true;
+	}
+	return false;
+}
+
+/** The touch twin of forwardDockWheel. On a phone the open dock covers most
+ * of the column, so a finger drag on it is the only way to reach the
+ * transcript, and scrolling the transcript up is what folds the dock. The
+ * axis locks on the first move: a sideways drag (the confidence slider)
+ * never scrolls. Pinches and multi-finger gestures are left alone. */
+export function dockTouchForwarder(root: HTMLElement, transcript: HTMLElement) {
+	let last: { x: number; y: number } | null = null;
+	let axis: "x" | "y" | null = null;
+	return {
+		start(event: TouchEvent) {
+			const t = event.touches.length === 1 ? event.touches[0] : null;
+			last = t ? { x: t.clientX, y: t.clientY } : null;
+			axis = null;
+		},
+		move(event: TouchEvent) {
+			const t = event.touches.length === 1 ? event.touches[0] : null;
+			if (!last || !t) return;
+			const dx = last.x - t.clientX;
+			const dy = last.y - t.clientY;
+			last = { x: t.clientX, y: t.clientY };
+			axis ??= Math.abs(dx) > Math.abs(dy) ? "x" : "y";
+			if (axis === "x" || dy === 0) return;
+			if (innerScrollerTakes(event.target, root, dy)) return;
+			if (event.cancelable) event.preventDefault();
+			transcript.scrollTop += dy;
+		},
+	};
 }

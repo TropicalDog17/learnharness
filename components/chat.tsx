@@ -29,7 +29,7 @@ import { useEnterSubmits } from "@/components/enter-submits";
 import { blurAfterPointerClick } from "@/components/focus-hygiene";
 import { dockStateKey } from "@/components/dock-state-key";
 import { clearOpeningPrompt, readOpeningPromptEntry, stashOpeningPrompt, OPENING_PROMPT_FAILURE } from "@/components/opening-prompt";
-import { forwardDockWheel, useDockHeight } from "@/components/dock-height";
+import { dockTouchForwarder, forwardDockWheel, useDockHeight } from "@/components/dock-height";
 import { QueuedSteersBody, type QueuedSteerLine } from "@/components/queued-steers";
 import { DictationBar, finishDictation, joinDictation, useDictation } from "@/components/dictation";
 import { useFieldCycle } from "@/components/field-cycle";
@@ -2190,8 +2190,15 @@ function DockOverlay({
 		const el = scrollRef.current;
 		if (!root || !el) return;
 		const onWheel = (e: WheelEvent) => forwardDockWheel(e, root, el);
+		const touch = dockTouchForwarder(root, el);
 		root.addEventListener("wheel", onWheel, { passive: false });
-		return () => root.removeEventListener("wheel", onWheel);
+		root.addEventListener("touchstart", touch.start, { passive: true });
+		root.addEventListener("touchmove", touch.move, { passive: false });
+		return () => {
+			root.removeEventListener("wheel", onWheel);
+			root.removeEventListener("touchstart", touch.start);
+			root.removeEventListener("touchmove", touch.move);
+		};
 	}, [scrollRef]);
 
 	// Explicit expand (bar click): the smooth scroll to the bottom takes
